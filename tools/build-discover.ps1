@@ -16,8 +16,10 @@
     Top 25 by Year      Per release year, a weighted rating: a movie's TMDB score, pulled
                         toward that year's average when it has few votes, so a 9.0
                         from 40 votes can't outrank an 8.4 from 20,000 (the method
-                        IMDb uses for its Top 250). Movies need -MinYearVotes votes
-                        to be ranked (fewer for the current and last year).
+                        IMDb uses for its Top 250). How strongly it pulls scales with
+                        the year's vote counts (a quarter of the average votes of its 25
+                        most-voted movies). Movies need -MinYearVotes votes to be
+                        ranked (-MinRecentVotes for the current and last year).
   Each list keeps a deeper "pool" than it shows (-PoolSize), so the app can filter it by
   genre and streaming service on the phone and still fill the list.
 
@@ -30,7 +32,7 @@ param(
     [int]$PoolSize = 100,
     [int]$TrendingPool = 200,
     [int]$MinYearVotes = 200,
-    [int]$MinRecentVotes = 50,
+    [int]$MinRecentVotes = 300,
     [int]$FirstYear = 1920,
     [string]$OutDir = (Join-Path (Split-Path -Parent $PSScriptRoot) 'public')
 )
@@ -62,10 +64,15 @@ $years = [ordered]@{}
 for ($y = $thisYear; $y -ge $FirstYear; $y--) {
     $all = $byYear["$y"]
     if (-not $all) { continue }
-    $m = if ($y -ge $thisYear - 1) { $MinRecentVotes } else { $MinYearVotes }
-    $ranked = @($all | Where-Object { $_.votes -ge $m -and $_.score -gt 0 })
+    $min = if ($y -ge $thisYear - 1) { $MinRecentVotes } else { $MinYearVotes }
+    $ranked = @($all | Where-Object { $_.votes -ge $min -and $_.score -gt 0 })
     if ($ranked.Count -lt 10) { continue }
     $c = ($ranked | Measure-Object score -Average).Average
+    # How many votes it takes to be trusted scales with the year: a quarter of the average
+    # votes of that year's 25 most-voted movies. A fixed number let niche titles with a
+    # few hundred enthusiastic votes top recent years, which fewer people have rated yet.
+    $topVotes = ($ranked | Sort-Object votes -Descending | Select-Object -First 25 | Measure-Object votes -Average).Average
+    $m = [Math]::Max($min, $topVotes / 4)
     $years["$y"] = @($ranked | Sort-Object @{ e = { Get-RankScore $_ $m $c }; Descending = $true }, @{ e = 'votes'; Descending = $true } |
         Select-Object -First $PoolSize | ForEach-Object { $_.id })
 }
