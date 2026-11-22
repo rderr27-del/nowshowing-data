@@ -6,12 +6,12 @@ Weekly movie data for the **Now Showing** Android app, built from [TMDB](https:/
 | File | What it is |
 |---|---|
 | `manifest.json` | Version (build time), the data sources to credit, and each file's size and SHA-256. The app checks this first. |
-| `catalog.tsv.gz` | Every movie on TMDB with 10+ votes, plus announced and new ones, for search on the phone: id, title, year, release date, popularity, score, votes, poster, genres, language |
+| `catalog.tsv.gz` | Every movie on TMDB with 10+ votes (~107,000), plus announced and new ones, for search on the phone: id, title, year, release date, popularity, score, votes, poster, genres, language |
 | `discover.json` | Discover lists: trending (week / month / 3 months / year) and top movies of each year, with display info and US streaming for every movie on them |
-| `awards.json` | Oscar winners in the major categories, by ceremony year |
+| `awards.json` | Oscar winners in the major categories, by ceremony year (853 winners, 1929 onward; categories in `config/awards.tsv`) |
 | `discover-posters.zip` | Small posters for what Discover shows first |
-| `movies/<id>.json` | Full details for ~25,000 movies: overview, runtime, US rating, US release dates (theatrical / digital / physical), and where to watch in the US (stream / free / with ads / rent / buy). Fetched by the app one at a time. |
-| `posters/<id>.jpg` | Posters (185×278) of the ~15,000 most popular movies plus every Discover and award movie. |
+| `movies/<id>.json` | Full details for ~21,000 movies: overview, runtime, US rating, US release dates (theatrical / digital / physical), and where to watch in the US (stream / free / with ads / rent / buy). Fetched by the app one at a time. |
+| `posters/<id>.jpg` | Posters (185×278) of the ~15,000 most popular movies (~16,000 files, ~270 MB) plus every Discover and award movie. |
 
 ## How it's built
 
@@ -29,6 +29,11 @@ Weekly movie data for the **Now Showing** Android app, built from [TMDB](https:/
 
 `.github/workflows/cache-keepalive.yml` opens the poster cache every Thursday, so GitHub's 7-day cache expiry
 can't delete it between weekly runs.
+
+## Status
+
+Running since November 22, 2026. A full run takes about 35 minutes. Every run is listed in the repo's Actions tab:
+a green check means the new data is live, a red X means the previous week's data stays up.
 
 ## Setup: the TMDB key
 

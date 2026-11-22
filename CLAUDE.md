@@ -6,25 +6,30 @@ Guidance for Claude Code working in this repository. `README.md` lists every pub
 
 The weekly data feed for the **Now Showing** Android movie app (the app lives in the private repo
 `C:\Users\rderr\OneDrive\Documents\Claude\NowShowing`, next to this folder; github.com/rderr27-del/nowshowing; read
-its CLAUDE.md for the app side). It's modeled on `rabbitears-data` (the owner's TV app feed, next to this folder):
-same layout, same manifest-and-checksum update scheme.
+its CLAUDE.md for the app side and the product decisions). It's modeled on `rabbitears-data` (the owner's TV app
+feed, next to this folder): same layout, same manifest-and-checksum update scheme.
 
-This repo is **public** (github.com/rderr27-del/nowshowing-data) and published by GitHub Pages at
-`https://rderr27-del.github.io/nowshowing-data/`. Never put anything private here: no keystore, no TMDB key (it's
-the `TMDB_API_KEY` Actions secret), nothing about users.
+This repo is **public** (github.com/rderr27-del/nowshowing-data) and published by GitHub Pages (source: GitHub
+Actions) at `https://rderr27-del.github.io/nowshowing-data/`. Never put anything private here: no keystore, no TMDB
+key (it's the `TMDB_API_KEY` Actions secret, set by the owner), nothing about users.
 
 ## Sources
 
-- **TMDB** (key required, free non-commercial terms): catalog, genres, trending, details, US release dates, posters.
-  The app is free with no ads; TMDB's terms need a commercial license otherwise. The owner may replace TMDB later.
-- **JustWatch via TMDB**: US watch providers (stream / free / ads / rent / buy). Must be credited. No "watch now" links,
-  by the owner's choice: the JustWatch `link` TMDB returns is deliberately not stored.
-- **Wikidata** (CC0, no key): Oscar winners, via SPARQL in `build-awards.ps1`. Golden Globes are commented out in
-  `config/awards.tsv` because Wikidata's Globe data covers only ~30 of ~80 years.
-- **OMDb (future)**: the owner may add IMDb / Rotten Tomatoes / Metacritic scores later. The design leaves room:
+- **TMDB** (key required, free non-commercial terms): catalog, genres, trending, details, US release dates and
+  ratings, posters. The app is free with no ads; TMDB's terms need a commercial license otherwise. The owner may
+  replace TMDB later. Either TMDB credential works in `TMDB_API_KEY`: the short API Key (sent as `api_key=`) or the
+  long Read Access Token (sent as a Bearer header); `common.ps1` tells them apart by length.
+- **JustWatch via TMDB**: US watch providers (stream / free / ads / rent / buy). Must be credited. No "watch now"
+  links, by the owner's choice: the JustWatch `link` TMDB returns is deliberately not stored.
+- **Wikidata** (CC0, no key): Oscar winners, via SPARQL in `build-awards.ps1`. Categories are lines in
+  `config/awards.tsv`. Winners are dated by their **ceremony** (the 2025 Oscars honored 2024 films); a statement's
+  bare "point in time" is ignored when the same film and category has a ceremony-dated statement, because it is
+  sometimes the film's year. Remaining double winners are real (ties in 1932 and 1969, two ceremonies in 1930).
+  **Golden Globes are commented out**: Wikidata has them for only ~30 of ~80 years, often dated by film year.
+- **OMDb (future)**: the owner may add IMDb / Rotten Tomatoes / Metacritic scores. The design leaves room:
   each movie file has a `ratings` object keyed by source (`tmdb` today), an `imdb` id to look OMDb up by, ranking
   goes through `Get-RankScore` in `build-discover.ps1`, and `manifest.json` lists `sources` for the app to credit.
-  OMDb's free key allows 1,000 requests a day, too few for ~25,000 movies weekly; paid tiers start around $1/month.
+  OMDb's free key allows 1,000 requests a day, too few for ~21,000 movies weekly; paid tiers start around $1/month.
 
 ## How it's built
 
@@ -33,7 +38,33 @@ PC has only 5.1, no pwsh or Python). Order: catalog → awards → discover pool
 script's header documents its inputs, outputs and rules. `tools/common.ps1` has the shared HTTP code: `Get-JsonMany`
 fetches 12 at a time with retries on 429/5xx and throws on other errors (a bad key fails the run instead of
 publishing empty data). Every script refuses to write output that looks broken (too few movies/winners), so the
-previous week's site stays up.
+previous week's site stays up. If Wikidata fails, last week's `history/awards.json` is republished.
+
+**Measured on the first runs (Nov 2026):** ~33–35 minutes total. Catalog 107,412 movies (10 MB, 5.5 MB gzipped);
+21,371 movie files; 244 streaming services; 16,235 posters (269 MB, cached between runs); 940 Discover thumbnails
+(5 MB zip); discover.json ~1.7 MB with 6,485 movies; awards 853 winners, 1929–2026.
+
+**Top 25 by Year** ranks by a weighted score: TMDB score pulled toward the year's average, with the pull scaled to
+the year (a quarter of the average votes of its 25 most-voted movies; recent years need 300+ votes, older 200+).
+A fixed weighting let niche titles with a few hundred votes top recent years.
+
+## Windows PowerShell 5.1 pitfalls (both bit us)
+
+- **Arrays read back from JSON get wrapped** as `{"value": [...], "Count": n}` when written out again
+  (`@(ConvertFrom-Json ...)` inside a hashtable). This broke the genre list and the app couldn't open Discover.
+  Rebuild such lists item by item into a `List[object]` and use `.ToArray()` (see `build-feed.ps1`).
+- `@($list)` of a `List[object]` inside an `[ordered]@{}` literal can throw "Argument types do not match"; use `.ToArray()`.
+- `Get-Content` reads UTF-8 files as ANSI in 5.1; use `[IO.File]::ReadAllText($p, [Text.Encoding]::UTF8)` (`Read-JsonFile`).
+- Check any change to the published shape with the app's `BundledFeedTest` (run `tools/fetch-feed.ps1` there first).
+
+## Running and watching it
+
+- Start a run: `gh workflow run weekly-data.yml --repo rderr27-del/nowshowing-data`.
+- Watch: `gh run watch <id> --repo rderr27-del/nowshowing-data --exit-status`; step status:
+  `gh run view <id> --json jobs`; logs: `gh run view --job=<job id> --log`.
+- **Deploy can fail on GitHub's side** ("Fetching artifact metadata failed ... re-run later"). The build is fine;
+  rerun only the failed job: `gh run rerun <id> --failed`.
+- Check the live site: `curl https://rderr27-del.github.io/nowshowing-data/manifest.json`.
 
 ## How the app uses it
 
@@ -46,8 +77,11 @@ previous week's site stays up.
 
 ## Working here
 
-- **Run `git pull --rebase` before pushing.** The workflow commits `last-run.json` and `history/awards.json` weekly.
-- Pushing here publishes. Confirm with the owner first.
+- **Run `git pull --rebase` before pushing.** The workflow commits `last-run.json` and `history/awards.json` each run.
+  Commit first, then pull: `git pull --rebase` refuses to run with uncommitted changes.
+- Pushing here publishes. Confirm new kinds of changes with the owner first.
 - The owner isn't a developer. Explain changes plainly and say what was and wasn't verified.
-- The TMDB scripts can only be tried with a key. `build-awards.ps1` needs none:
+- Claude must not handle the TMDB key; the owner sets it with
+  `gh secret set TMDB_API_KEY --repo rderr27-del/nowshowing-data`. `gh secret list` confirms it exists.
+- Local runs need the key in `$env:TMDB_API_KEY`. `build-awards.ps1` needs none:
   `powershell -ExecutionPolicy Bypass -File tools\build-awards.ps1 -OutDir $env:TEMP\ns-test`.
