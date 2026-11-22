@@ -62,11 +62,16 @@ foreach ($id in ($ids | Sort-Object)) {
     $movies["$id"] = $entry
 }
 
+# Rebuilt item by item: Windows PowerShell 5.1 wraps an array read back from JSON in
+# {"value": [...], "Count": n} when it's written out again.
+$genres = New-Object System.Collections.Generic.List[object]
+foreach ($g in (Read-JsonFile (Join-Path $OutDir 'genres.json'))) { $genres.Add([ordered]@{ id = [int]$g.id; name = $g.name }) }
+
 $discover = [ordered]@{
     schema    = 1
     updated   = $pools.updated
     region    = $Region
-    genres    = @(Read-JsonFile (Join-Path $OutDir 'genres.json'))
+    genres    = $genres.ToArray()
     providers = Read-JsonFile (Join-Path $OutDir 'providers.json')
     trending  = $pools.trending
     years     = $pools.years
