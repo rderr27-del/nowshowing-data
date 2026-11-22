@@ -21,11 +21,18 @@ key (it's the `TMDB_API_KEY` Actions secret, set by the owner), nothing about us
   long Read Access Token (sent as a Bearer header); `common.ps1` tells them apart by length.
 - **JustWatch via TMDB**: US watch providers (stream / free / ads / rent / buy). Must be credited. No "watch now"
   links, by the owner's choice: the JustWatch `link` TMDB returns is deliberately not stored.
-- **Wikidata** (CC0, no key): Oscar winners, via SPARQL in `build-awards.ps1`. Categories are lines in
-  `config/awards.tsv`. Winners are dated by their **ceremony** (the 2025 Oscars honored 2024 films); a statement's
-  bare "point in time" is ignored when the same film and category has a ceremony-dated statement, because it is
-  sometimes the film's year. Remaining double winners are real (ties in 1932 and 1969, two ceremonies in 1930).
-  **Golden Globes are commented out**: Wikidata has them for only ~30 of ~80 years, often dated by film year.
+- **Wikipedia** (CC BY-SA 4.0, no key; credit it): Oscar and Golden Globe winners AND nominees, read from each
+  ceremony's page ("97th Academy Awards", "82nd Golden Globe Awards" → redirect) by `build-awards.ps1`. Under each
+  category heading, top-level bullets are winners and second-level bullets nominees; old pages vary (a bold line or
+  ‡ marks the winner, or winners only), and the parser handles those. The ceremony year and date come from the
+  infobox; a ceremony still to come is nominees only. Only categories in `config/awards.tsv` are kept (matched by
+  the article the heading links to, redirects followed, or the heading text). Wikidata was the source until Nov
+  2026 but had Golden Globes for only ~30 of ~80 years and no usable nominees.
+  **Rate limits**: pages are fetched with `index.php?action=raw` (cached, one at a time). Wikipedia's API answers
+  429 quickly for automated clients, so it is used only for links Wikidata can't place (redirects), 2 s apart,
+  honoring Retry-After.
+- **Wikidata** (CC0, no key): turns each nominated film's Wikipedia article into its TMDB id (P4947), through
+  sitelink lookups (a few hundred titles per SPARQL query).
 - **OMDb (future)**: the owner may add IMDb / Rotten Tomatoes / Metacritic scores. The design leaves room:
   each movie file has a `ratings` object keyed by source (`tmdb` today), an `imdb` id to look OMDb up by, ranking
   goes through `Get-RankScore` in `build-discover.ps1`, and `manifest.json` lists `sources` for the app to credit.
@@ -38,22 +45,24 @@ PC has only 5.1, no pwsh or Python). Order: catalog → awards → discover pool
 script's header documents its inputs, outputs and rules. `tools/common.ps1` has the shared HTTP code: `Get-JsonMany`
 fetches 12 at a time with retries on 429/5xx and throws on other errors (a bad key fails the run instead of
 publishing empty data). Every script refuses to write output that looks broken (too few movies/winners), so the
-previous week's site stays up. If Wikidata fails, last week's `history/awards.json` is republished.
+previous week's site stays up. If Wikipedia or Wikidata fails, last week's `history/awards.json` is republished.
 
 **Measured on the first runs (Nov 2026):** ~33–35 minutes total. Catalog 107,412 movies (10 MB, 5.5 MB gzipped);
 21,371 movie files; 244 streaming services; 16,235 posters (269 MB, cached between runs); 940 Discover thumbnails
-(5 MB zip); discover.json ~1.7 MB with 6,485 movies; awards 853 winners, 1929–2026.
+(5 MB zip); discover.json ~1.7 MB with 6,485 movies; awards (winners only, Wikidata) 853 Oscar winners, 1929–2026; see last-run.json for current counts.
 
 **Top 25 by Year** ranks by a weighted score: TMDB score pulled toward the year's average, with the pull scaled to
 the year (a quarter of the average votes of its 25 most-voted movies; recent years need 300+ votes, older 200+).
 A fixed weighting let niche titles with a few hundred votes top recent years.
 
-## Windows PowerShell 5.1 pitfalls (both bit us)
+## Windows PowerShell 5.1 pitfalls (all of these bit us)
 
 - **Arrays read back from JSON get wrapped** as `{"value": [...], "Count": n}` when written out again
   (`@(ConvertFrom-Json ...)` inside a hashtable). This broke the genre list and the app couldn't open Discover.
   Rebuild such lists item by item into a `List[object]` and use `.ToArray()` (see `build-feed.ps1`).
 - `@($list)` of a `List[object]` inside an `[ordered]@{}` literal can throw "Argument types do not match"; use `.ToArray()`.
+- **Script files without a BOM are read as ANSI**, so a non-ASCII character in code (an en dash in a regex, ‡) never
+  matches. Keep code ASCII: build such characters with `[char]0x2013` (`build-awards.ps1` does this).
 - `Get-Content` reads UTF-8 files as ANSI in 5.1; use `[IO.File]::ReadAllText($p, [Text.Encoding]::UTF8)` (`Read-JsonFile`).
 - Check any change to the published shape with the app's `BundledFeedTest` (run `tools/fetch-feed.ps1` there first).
 

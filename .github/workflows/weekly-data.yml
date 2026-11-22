@@ -36,7 +36,7 @@ jobs:
         shell: powershell
         run: .\tools\build-catalog.ps1 -OutDir public
 
-      # Wikidata is occasionally slow or down. Then last week's awards (kept in
+      # Wikipedia or Wikidata is occasionally slow, down or rate-limiting. Then last week's awards (kept in
       # history/awards.json) are published again instead of failing the whole run.
       - name: Build awards
         id: awards
@@ -48,7 +48,7 @@ jobs:
         if: steps.awards.outcome != 'success'
         shell: powershell
         run: |
-          Write-Host "::warning::Wikidata failed; republishing last week's awards."
+          Write-Host "::warning::Awards build failed (Wikipedia or Wikidata); republishing last week's awards."
           Copy-Item history\awards.json public\awards.json
 
       - name: Rank Discover lists

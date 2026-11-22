@@ -8,7 +8,7 @@
 
   Which movies (-DetailCount and friends): the most voted-on and the most popular
   movies in the catalog, every recent or upcoming one, every movie on a Discover
-  list and every award winner (~25,000). The app shows a movie outside this set with
+  list and every award winner and nominee (~25,000). The app shows a movie outside this set with
   catalog info only (title, year, score, poster).
 
   Writes (to public/ unless -OutDir says otherwise):
@@ -59,7 +59,7 @@ $pools = Read-JsonFile (Join-Path $OutDir 'discover-pools.json')
 foreach ($p in $pools.trending.PSObject.Properties) { foreach ($id in $p.Value) { [void]$wanted.Add([int]$id) } }
 foreach ($p in $pools.years.PSObject.Properties) { foreach ($id in $p.Value) { [void]$wanted.Add([int]$id) } }
 $awards = Read-JsonFile (Join-Path $OutDir 'awards.json')
-foreach ($p in $awards.years.PSObject.Properties) { foreach ($w in $p.Value) { [void]$wanted.Add([int]$w.movie) } }
+foreach ($p in (@($awards.years, $awards.nominees) | Where-Object { $_ } | ForEach-Object { $_.PSObject.Properties })) { foreach ($w in $p.Value) { [void]$wanted.Add([int]$w.movie) } }
 Write-Host "details: $($wanted.Count) movies"
 
 # ── Fetch, a chunk at a time (all of it at once wouldn't fit in memory) ───

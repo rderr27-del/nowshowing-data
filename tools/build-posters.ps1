@@ -54,7 +54,7 @@ $catalog.Values | Sort-Object @{ e = 'popularity'; Descending = $true } | Select
 $extra = New-Object 'System.Collections.Generic.HashSet[int]'
 foreach ($p in $pools.trending.PSObject.Properties) { foreach ($id in $p.Value) { [void]$extra.Add([int]$id) } }
 foreach ($p in $pools.years.PSObject.Properties) { foreach ($id in $p.Value) { [void]$extra.Add([int]$id) } }
-foreach ($p in $awards.years.PSObject.Properties) { foreach ($w in $p.Value) { [void]$extra.Add([int]$w.movie) } }
+foreach ($p in (@($awards.years, $awards.nominees) | Where-Object { $_ } | ForEach-Object { $_.PSObject.Properties })) { foreach ($w in $p.Value) { [void]$extra.Add([int]$w.movie) } }
 foreach ($id in $extra) {
     $path = Get-PosterPath $id
     if ($path) { $want[$id] = $path }
@@ -66,7 +66,7 @@ $firstThumbYear = (Get-UtcToday).Year - $ThumbYears
 foreach ($p in $pools.years.PSObject.Properties) {
     if ([int]$p.Name -ge $firstThumbYear) { @($p.Value) | Select-Object -First $ShownPerList | ForEach-Object { [void]$thumbs.Add([int]$_) } }
 }
-foreach ($p in $awards.years.PSObject.Properties) {
+foreach ($p in (@($awards.years, $awards.nominees) | Where-Object { $_ } | ForEach-Object { $_.PSObject.Properties })) {
     if ([int]$p.Name -ge $firstThumbYear) { foreach ($w in $p.Value) { [void]$thumbs.Add([int]$w.movie) } }
 }
 

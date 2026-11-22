@@ -35,7 +35,7 @@ $movieDir = Join-Path $OutDir 'movies'
 $ids = New-Object 'System.Collections.Generic.HashSet[int]'
 foreach ($p in $pools.trending.PSObject.Properties) { foreach ($id in $p.Value) { [void]$ids.Add([int]$id) } }
 foreach ($p in $pools.years.PSObject.Properties) { foreach ($id in $p.Value) { [void]$ids.Add([int]$id) } }
-foreach ($p in $awards.years.PSObject.Properties) { foreach ($w in $p.Value) { [void]$ids.Add([int]$w.movie) } }
+foreach ($p in (@($awards.years, $awards.nominees) | Where-Object { $_ } | ForEach-Object { $_.PSObject.Properties })) { foreach ($w in $p.Value) { [void]$ids.Add([int]$w.movie) } }
 
 $movies = [ordered]@{}
 $noDetails = 0
@@ -109,7 +109,7 @@ $manifest = [ordered]@{
     region  = $Region
     # Who to credit on the app's Info screen. A new data source (OMDb, say) is added here
     # and in the app's list of credits; the app credits the ones a feed lists.
-    sources = @('tmdb', 'justwatch', 'wikidata')
+    sources = @('tmdb', 'justwatch', 'wikipedia', 'wikidata')
     files   = [ordered]@{
         catalog  = Entry 'catalog.tsv.gz'
         discover = Entry 'discover.json'
@@ -125,7 +125,8 @@ $index = @"
 See <a href="manifest.json">manifest.json</a>.</p>
 <p>This product uses the TMDB API but is not endorsed or certified by
 <a href="https://www.themoviedb.org/">TMDB</a>. Streaming availability by
-<a href="https://www.justwatch.com/">JustWatch</a>. Awards from
+<a href="https://www.justwatch.com/">JustWatch</a>. Award winners and nominees from
+<a href="https://en.wikipedia.org/">Wikipedia</a> (CC BY-SA 4.0), matched to TMDB through
 <a href="https://www.wikidata.org/">Wikidata</a> (CC0).</p>
 "@
 Write-Utf8 (Join-Path $OutDir 'index.html') $index

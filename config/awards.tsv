@@ -1,28 +1,38 @@
-# Award categories build-awards.ps1 collects from Wikidata. Add a line to add a category;
-# no code changes are needed, and the app shows whatever categories awards.json lists.
+# Awards shows and categories that build-awards.ps1 reads from Wikipedia's ceremony pages.
+# Add a line to add a category; no code changes are needed, and the app shows whatever
+# categories awards.json lists. Only these categories are collected, not every award.
 #
-# id <TAB> show id <TAB> category name shown in the app <TAB> Wikidata item <TAB> people?
-#   show id   groups categories under one awards show (see the [shows] section below)
-#   people    yes = also list the winning people (director, actor...), no = the film is the winner
+# [shows]       id <TAB> name <TAB> short name <TAB> ceremony page title ({n} = 1st, 2nd...) <TAB> year of the 1st ceremony
+# [categories]  id <TAB> show id <TAB> name shown in the app <TAB> match <TAB> people?
+#   match   how the category is recognized on a ceremony page, separated by |: the
+#           Wikipedia article its heading links to (redirects are followed), or the
+#           heading's exact text for years when the heading has no usable link
+#   people  yes = also list the nominated people (director, actor...), no = the film is the nominee
 #
 # Lines are shown in this order within each show.
 [shows]
-oscars	Academy Awards	Oscars
-#globes	Golden Globe Awards	Golden Globes
+oscars	Academy Awards	Oscars	{n} Academy Awards	1929
+globes	Golden Globe Awards	Golden Globes	{n} Golden Globe Awards	1944
 [categories]
-oscar-picture	oscars	Best Picture	Q102427	no
-oscar-director	oscars	Best Director	Q103360	yes
-oscar-actor	oscars	Best Actor	Q103916	yes
-oscar-actress	oscars	Best Actress	Q103618	yes
-oscar-supporting-actor	oscars	Best Supporting Actor	Q106291	yes
-oscar-supporting-actress	oscars	Best Supporting Actress	Q106301	yes
-oscar-original-screenplay	oscars	Best Original Screenplay	Q41417	yes
-oscar-adapted-screenplay	oscars	Best Adapted Screenplay	Q107258	yes
-oscar-animated	oscars	Best Animated Feature	Q106800	no
-oscar-international	oscars	Best International Feature	Q105304	no
-# Golden Globes are off for now: Wikidata records winners for only about 30 of the ~80
-# years, often dated by film year rather than ceremony, so the list would look broken.
-# Remove the # from these lines to turn them back on once that data is fuller.
-#globe-drama	globes	Best Motion Picture – Drama	Q1011509	no
-#globe-comedy	globes	Best Motion Picture – Musical or Comedy	Q670282	no
-#globe-animated	globes	Best Animated Feature	Q878902	no
+oscar-picture	oscars	Best Picture	Academy Award for Best Picture	no
+oscar-director	oscars	Best Director	Academy Award for Best Director	yes
+oscar-actor	oscars	Best Actor	Academy Award for Best Actor	yes
+oscar-actress	oscars	Best Actress	Academy Award for Best Actress	yes
+oscar-supporting-actor	oscars	Best Supporting Actor	Academy Award for Best Supporting Actor	yes
+oscar-supporting-actress	oscars	Best Supporting Actress	Academy Award for Best Supporting Actress	yes
+oscar-original-screenplay	oscars	Best Original Screenplay	Academy Award for Best Original Screenplay	yes
+oscar-adapted-screenplay	oscars	Best Adapted Screenplay	Academy Award for Best Adapted Screenplay	yes
+oscar-animated	oscars	Best Animated Feature	Academy Award for Best Animated Feature	no
+oscar-international	oscars	Best International Feature	Academy Award for Best International Feature Film|Best Foreign Language Film|Best International Feature Film	no
+globe-drama	globes	Best Motion Picture – Drama	Golden Globe Award for Best Motion Picture – Drama	no
+globe-comedy	globes	Best Motion Picture – Musical or Comedy	Golden Globe Award for Best Motion Picture – Musical or Comedy	no
+globe-director	globes	Best Director	Golden Globe Award for Best Director	yes
+globe-actor-drama	globes	Best Actor – Drama	Golden Globe Award for Best Actor in a Motion Picture – Drama	yes
+globe-actress-drama	globes	Best Actress – Drama	Golden Globe Award for Best Actress in a Motion Picture – Drama	yes
+globe-actor-comedy	globes	Best Actor – Musical or Comedy	Golden Globe Award for Best Actor in a Motion Picture – Musical or Comedy	yes
+globe-actress-comedy	globes	Best Actress – Musical or Comedy	Golden Globe Award for Best Actress in a Motion Picture – Musical or Comedy	yes
+globe-supporting-actor	globes	Best Supporting Actor	Golden Globe Award for Best Supporting Actor – Motion Picture	yes
+globe-supporting-actress	globes	Best Supporting Actress	Golden Globe Award for Best Supporting Actress – Motion Picture	yes
+globe-screenplay	globes	Best Screenplay	Golden Globe Award for Best Screenplay	yes
+globe-animated	globes	Best Animated Feature	Golden Globe Award for Best Animated Feature Film	no
+globe-non-english	globes	Best Non-English Language Film	Golden Globe Award for Best Motion Picture – Non-English Language|Best Foreign Language Film|Best Foreign Film	no
