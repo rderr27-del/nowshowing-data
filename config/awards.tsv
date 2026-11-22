@@ -1,0 +1,28 @@
+# Award categories build-awards.ps1 collects from Wikidata. Add a line to add a category;
+# no code changes are needed, and the app shows whatever categories awards.json lists.
+#
+# id <TAB> show id <TAB> category name shown in the app <TAB> Wikidata item <TAB> people?
+#   show id   groups categories under one awards show (see the [shows] section below)
+#   people    yes = also list the winning people (director, actor...), no = the film is the winner
+#
+# Lines are shown in this order within each show.
+[shows]
+oscars	Academy Awards	Oscars
+#globes	Golden Globe Awards	Golden Globes
+[categories]
+oscar-picture	oscars	Best Picture	Q102427	no
+oscar-director	oscars	Best Director	Q103360	yes
+oscar-actor	oscars	Best Actor	Q103916	yes
+oscar-actress	oscars	Best Actress	Q103618	yes
+oscar-supporting-actor	oscars	Best Supporting Actor	Q106291	yes
+oscar-supporting-actress	oscars	Best Supporting Actress	Q106301	yes
+oscar-original-screenplay	oscars	Best Original Screenplay	Q41417	yes
+oscar-adapted-screenplay	oscars	Best Adapted Screenplay	Q107258	yes
+oscar-animated	oscars	Best Animated Feature	Q106800	no
+oscar-international	oscars	Best International Feature	Q105304	no
+# Golden Globes are off for now: Wikidata records winners for only about 30 of the ~80
+# years, often dated by film year rather than ceremony, so the list would look broken.
+# Remove the # from these lines to turn them back on once that data is fuller.
+#globe-drama	globes	Best Motion Picture – Drama	Q1011509	no
+#globe-comedy	globes	Best Motion Picture – Musical or Comedy	Q670282	no
+#globe-animated	globes	Best Animated Feature	Q878902	no
