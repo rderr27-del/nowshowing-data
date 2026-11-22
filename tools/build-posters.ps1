@@ -66,7 +66,9 @@ $firstThumbYear = (Get-UtcToday).Year - $ThumbYears
 foreach ($p in $pools.years.PSObject.Properties) {
     if ([int]$p.Name -ge $firstThumbYear) { @($p.Value) | Select-Object -First $ShownPerList | ForEach-Object { [void]$thumbs.Add([int]$_) } }
 }
-foreach ($p in (@($awards.years, $awards.nominees) | Where-Object { $_ } | ForEach-Object { $_.PSObject.Properties })) {
+# Winners only: nominees would triple the zip every phone downloads; their posters load
+# one at a time from posters/ when scrolled to.
+foreach ($p in $awards.years.PSObject.Properties) {
     if ([int]$p.Name -ge $firstThumbYear) { foreach ($w in $p.Value) { [void]$thumbs.Add([int]$w.movie) } }
 }
 
