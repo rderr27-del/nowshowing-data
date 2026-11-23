@@ -1,6 +1,6 @@
-# Rebuilds Now Showing's movie data from TMDB and Wikidata every week and publishes it
-# to GitHub Pages, where the app picks it up. Takes ~45 minutes, longer when the poster
-# cache is empty. Needs the TMDB_API_KEY repository secret (see README).
+# Rebuilds Now Showing's movie data from TMDB, Wikipedia and Wikidata every week and
+# publishes it to GitHub Pages, where the app picks it up. Takes ~30 minutes. Needs the
+# TMDB_API_KEY repository secret (see README).
 name: Weekly data
 
 on:
@@ -59,20 +59,8 @@ jobs:
         shell: powershell
         run: .\tools\build-details.ps1 -OutDir public
 
-      # Posters are kept between weekly runs so only new or changed ones are
-      # downloaded. Each run saves a fresh cache entry; the newest is restored.
-      # cache-keepalive.yml opens it mid-week so GitHub's 7-day expiry never hits.
-      - name: Restore posters
-        uses: actions/cache@v6
-        with:
-          path: public/posters
-          key: posters-${{ github.run_id }}
-          restore-keys: posters-
-
-      - name: Copy posters
-        shell: powershell
-        run: .\tools\build-posters.ps1 -OutDir public
-
+      # No posters: since Nov 2026 the app loads them from TMDB's image server at the
+      # size each screen needs, so the feed no longer copies or hosts them.
       - name: Package feed
         shell: powershell
         run: .\tools\build-feed.ps1 -OutDir public
@@ -81,20 +69,12 @@ jobs:
         shell: powershell
         run: |
           Remove-Item public\catalog.tsv, public\discover-pools.json, public\genres.json, public\providers.json
-          Remove-Item public\discover -Recurse
-          Copy-Item public\posters\index.tsv poster-index.tsv
-          Remove-Item public\posters\index.tsv
 
       - uses: actions/upload-artifact@v7
         with:
           name: feed
           path: public
           retention-days: 7
-
-      # Puts the poster index back so the cache saved at the end of the job has it.
-      - name: Keep poster index for the cache
-        shell: powershell
-        run: Move-Item poster-index.tsv public\posters\index.tsv
 
       # Commits last-run.json (GitHub disables scheduled workflows after 60 days
       # without repository activity) and this week's awards as next week's fallback.

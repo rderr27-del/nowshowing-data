@@ -41,15 +41,14 @@ key (it's the `TMDB_API_KEY` Actions secret, set by the owner), nothing about us
 ## How it's built
 
 `.github/workflows/weekly-data.yml`, Mondays 10:00 UTC on `windows-latest` with Windows PowerShell 5.1 (the owner's
-PC has only 5.1, no pwsh or Python). Order: catalog → awards → discover pools → details → posters → feed. Each
+PC has only 5.1, no pwsh or Python). Order: catalog → awards → discover pools → details → feed. Each
 script's header documents its inputs, outputs and rules. `tools/common.ps1` has the shared HTTP code: `Get-JsonMany`
 fetches 12 at a time with retries on 429/5xx and throws on other errors (a bad key fails the run instead of
 publishing empty data). Every script refuses to write output that looks broken (too few movies/winners), so the
 previous week's site stays up. If Wikipedia or Wikidata fails, last week's `history/awards.json` is republished.
 
 **Measured on the first runs (Nov 2026):** ~33–35 minutes total. Catalog 107,412 movies (10 MB, 5.5 MB gzipped);
-21,371 movie files; 244 streaming services; 16,235 posters (269 MB, cached between runs); 940 Discover thumbnails
-(5 MB zip); discover.json ~1.7 MB with 6,485 movies; awards (winners only, Wikidata) 853 Oscar winners, 1929–2026; see last-run.json for current counts.
+21,371 movie files; 244 streaming services; (posters and the Discover thumbnail zip were dropped in Nov 2026); discover.json ~1.7 MB with 6,485 movies; awards (winners only, Wikidata) 853 Oscar winners, 1929–2026; see last-run.json for current counts.
 
 **Top 25 by Year** ranks by a weighted score: TMDB score pulled toward the year's average, with the pull scaled to
 the year (a quarter of the average votes of its 25 most-voted movies; recent years need 300+ votes, older 200+).
@@ -80,8 +79,11 @@ A fixed weighting let niche titles with a few hundred votes top recent years.
 - `manifest.json` at most once a day; files whose checksum changed are downloaded, verified, swapped in.
 - **Don't rename or reshape published files or fields** without updating the app: phones on older versions keep
   reading them. Add fields; never remove or rename. `catalog.tsv` columns may only be appended.
-- `movies/<id>.json` and `posters/<id>.jpg` aren't in the manifest. The app requests them per movie and falls back to
-  catalog info / TMDB's image server on 404.
+- `movies/<id>.json` isn't in the manifest. The app requests it per movie and falls back to catalog info on 404.
+- **No posters in the feed.** The app loads them from TMDB's image server at the width each screen needs (w154 in
+  lists, w342/w500 on the movie page), saves w342 copies of your own movies as WebP, and caps its browse cache.
+  Keep `poster` paths in the catalog, discover.json and movie files: that's all the app needs. Hosting larger
+  posters here would have outgrown GitHub Pages' 1 GB limit.
 - The app bundles a copy of the feed for first launch (its `tools/fetch-feed.ps1`).
 
 ## Working here

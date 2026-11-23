@@ -9,13 +9,14 @@
                            genre names and streaming services, so the app can filter
                            by genre and service on the phone
     catalog.tsv.gz         the search catalog, gzipped
-    discover-posters.zip   the Discover thumbnails
     manifest.json          what the app checks first: version (build time, UTC), the
                            data sources to credit, and each file's size and SHA-256
     index.html             a small landing page
 
-  awards.json is published as build-awards.ps1 wrote it. movies/<id>.json and
-  posters/<id>.jpg are fetched one at a time by the app and aren't in the manifest.
+  awards.json is published as build-awards.ps1 wrote it. movies/<id>.json are fetched one
+  at a time by the app and aren't in the manifest. No posters: the app loads them from
+  TMDB's image server (image.tmdb.org) at the size each screen needs, using the poster
+  paths in the catalog, discover.json and the movie files.
 #>
 param(
     [string]$Region = 'US',
@@ -87,11 +88,6 @@ $gzip = New-Object IO.Compression.GZipStream($outStream, [IO.Compression.Compres
 $in.CopyTo($gzip)
 $gzip.Dispose(); $outStream.Dispose(); $in.Dispose()
 
-# ── discover-posters.zip (flat: <id>.jpg) ─────────────────────────────────
-$zip = Join-Path $OutDir 'discover-posters.zip'
-if (Test-Path $zip) { Remove-Item $zip }
-[IO.Compression.ZipFile]::CreateFromDirectory((Join-Path $OutDir 'discover'), $zip, [IO.Compression.CompressionLevel]::NoCompression, $false)
-
 # ── manifest.json ─────────────────────────────────────────────────────────
 function Entry([string]$name) {
     $path = Join-Path $OutDir $name
@@ -114,7 +110,6 @@ $manifest = [ordered]@{
         catalog  = Entry 'catalog.tsv.gz'
         discover = Entry 'discover.json'
         awards   = Entry 'awards.json'
-        posters  = Entry 'discover-posters.zip'
     }
 }
 Write-JsonFile (Join-Path $OutDir 'manifest.json') $manifest
